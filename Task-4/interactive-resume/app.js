@@ -1,41 +1,56 @@
 const express = require("express");
 const morgan = require("morgan");
 require("dotenv").config({ debug: process.env.DEBUG });
-// const cors = require("cors");
+const session = require("express-session");
+const MongoStore = require('connect-mongo');
+const flash = require("connect-flash");
 const mongoose = require("mongoose")
-const methodOverride = require('method-override');
 const resumeRoutes = require("./src/routes/resume.route");
-// const UserRoutes = require("./base/routes/user/user.route");
 
 const app = express();
 
-
-// app.use(cors());
 app.use(morgan('dev'));
 
 // connect to mongoDB
-// (async() => {
-//   try {
+(async() => {
+  try {
 
-//     const connectmDB = await mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true , useCreateIndex: true, useFindAndModify: false });
+    const connectmDB = await mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true , useCreateIndex: true, useFindAndModify: false });
 
-//     if(connectmDB) {
-//     console.log(`Connected to DB`);
-//     }
+    if(connectmDB) {
+    console.log(`Connected to DB`);
+    }
 
-//   } catch (err) {
-//     console.log(`Failed to connect to DB ${err}`);
-//   }
-// })();
+  } catch (err) {
+    console.log(`Failed to connect to DB ${err}`);
+  }
+})();
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(methodOverride('_method'));
+app.use(session({
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
+  secret: process.env.SECRET,
+  resave: true,
+  saveUninitialized: true
+}));
+app.use(flash());
+
+app.use((req, res, next) => {
+  res.locals.success_msg = req.flash("success_msg");
+  res.locals.error_msg = req.flash("error_msg");
+  res.locals.error = req.flash("error");
+  next();
+});
+
+
+app.get("/", (req, res) => {
+  res.redirect("/resume");
+});
 
 app.use("/resume", resumeRoutes);
-// app.use("/api", UserRoutes);
 
 app.use( (req, res, next) => {
   let error = new Error("Page Not Found");
