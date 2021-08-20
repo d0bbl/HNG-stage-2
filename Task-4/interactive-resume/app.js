@@ -8,7 +8,6 @@ const resumeRoutes = require("./src/routes/resume.route");
 
 const app = express();
 
-
 // connect to mongoDB
 (async() => {
   try {
